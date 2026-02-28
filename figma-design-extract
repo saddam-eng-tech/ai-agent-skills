@@ -1,0 +1,338 @@
+# Claude Skills: Figma-to-React Design Implementation
+
+## Overview
+This skill set enables precise extraction of design specifications from Figma (via MCP server or image analysis) and implementation in React/TypeScript that strictly adheres to existing repository standards, naming conventions, and architectural patterns.
+
+---
+
+## 1. FIGMA EXTRACTION PROTOCOL
+
+### 1.1 MCP Server Connection (Preferred Method)
+
+When Figma MCP server is available:
+- **Use Figma MCP tools** to fetch raw JSON structure, design tokens, and component metadata
+- **Extract at the component level** - request specific node IDs rather than entire pages
+- **Always fetch design tokens first** before component structure to establish the theme context
+- **Request Code Connect mappings** if available to understand existing component relationships
+
+**MCP Tool Call Sequence:**
+1. `figma.get_file_variables` → Extract design tokens (colors, typography, spacing)
+2. `figma.get_component` → Get component metadata and variant properties  
+3. `figma.get_nodes` → Fetch specific component node with full structural data
+4. `figma.get_images` → Export required assets (PNG/SVG) at 1x and 2x scales
+
+### 1.2 Image Analysis Method (Fallback)
+
+When only Figma image/screenshot is available:
+- **Request highest resolution available** (minimum 2x for accurate measurements)
+- **Analyze layer structure** by identifying visual hierarchy and nesting
+- **Detect design tokens visually**: Extract color hex codes, font sizes, spacing values
+- **Identify Auto Layout patterns**: Note flex directions, gaps, padding patterns
+- **Map responsive breakpoints** if multiple viewport images provided
+
+---
+
+## 2. DESIGN SPECIFICATION EXTRACTION
+
+### 2.1 Required Design Token Categories
+
+Extract and map these exact token categories:
+
+**Colors (Semantic Naming)**
+- `color/background/primary`, `secondary`, `tertiary`
+- `color/text/primary`, `secondary`, `muted`, `inverse`
+- `color/border/default`, `strong`, `subtle`
+- `color/accent/primary`, `hover`, `pressed`
+- `color/state/success`, `warning`, `error`, `info`
+- `color/overlay/modal`, `dropdown`, `tooltip`
+
+**Typography**
+- `font/family/heading`, `body`, `mono`
+- `font/size/xs`, `sm`, `base`, `lg`, `xl`, `2xl`, `3xl`, `4xl`
+- `font/weight/regular`, `medium`, `semibold`, `bold`
+- `line-height/tight`, `normal`, `relaxed`, `loose`
+- `letter-spacing/tight`, `normal`, `wide`
+
+**Spacing (4px base grid)**
+- `space/0`, `1`, `2`, `3`, `4`, `5`, `6`, `8`, `10`, `12`, `16`, `20`, `24`, `32`, `40`, `48`, `64`, `80`
+- Maps to: 0px, 4px, 8px, 12px, 16px, 20px, 24px, 32px, 40px, 48px, 64px, 80px, 96px, 128px, 160px, 256px, 320px
+
+**Border Radius**
+- `radius/none`, `sm`, `md`, `lg`, `xl`, `2xl`, `full`
+- Maps to: 0px, 2px, 4px, 6px, 8px, 12px, 16px, 9999px
+
+**Shadows**
+- `shadow/sm`, `md`, `lg`, `xl`, `2xl`
+- Include: x-offset, y-offset, blur, spread, color, opacity
+
+### 2.2 Component Structure Analysis
+
+For each component, extract:
+
+**Layout Properties**
+- Display type (flex, grid, block)
+- Flex direction, wrap, justify-content, align-items
+- Gap values (row-gap, column-gap)
+- Padding and margin (top, right, bottom, left specific)
+- Width, height (fixed, min, max, fill, hug)
+
+**Visual Properties**
+- Background fills (solid, gradient, image)
+- Border properties (width, style, color, individual sides)
+- Effects (shadows, blurs, layer opacity)
+- Corner radius (individual corners if asymmetric)
+
+**Typography Details**
+- Font family, size, weight, line-height, letter-spacing
+- Text alignment, decoration, transform
+- Paragraph spacing, indentation
+
+**Interactive States**
+- Default, hover, active, disabled, focus, selected
+- State transitions and animations (duration, easing)
+- Conditional visibility rules
+
+---
+
+## 3. REPOSITORY STANDARDS COMPLIANCE
+
+### 3.1 Pre-Implementation Analysis
+
+**Before writing any code:**
+1. **Scan existing component directory structure** - mirror the exact folder hierarchy
+2. **Analyze naming conventions** - check existing components for:
+   - File naming (PascalCase, camelCase, kebab-case)
+   - Component function naming patterns
+   - Interface/type naming (IComponent vs ComponentProps vs ComponentType)
+   - CSS module vs Styled Components vs Tailwind usage
+3. **Identify design system imports** - note existing token imports, utility functions, hook patterns
+4. **Check for similar components** - reuse and extend existing implementations
+5. **Review tsconfig paths** - use aliased imports (e.g., `@/components`, `@/utils`)
+
+### 3.2 Code Architecture Alignment
+
+**Component Structure (match existing patterns):**
+
+If repository uses this pattern:
+```typescript
+import { cn } from \'@/lib/utils\';
+import { VariantProps, cva } from \'class-variance-authority\';
+```
+
+Use the same. If it uses:
+```typescript
+import clsx from \'clsx\';
+import { twMerge } from \'tailwind-merge\';
+```
+
+Use that instead. Never introduce new utility patterns.
+
+**Props Interface Naming:**
+
+Match existing convention found in codebase:
+```typescript
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> { }
+// or
+type ButtonProps = { }
+// or  
+interface IButtonProps { }
+```
+
+**Export Patterns:**
+
+Check if codebase uses:
+```typescript
+export { Button, type ButtonProps };
+// vs
+export default Button;
+// vs
+export const Button = ...
+```
+
+---
+
+## 4. REACT/TYPESCRIPT IMPLEMENTATION RULES
+
+### 4.1 Component Generation Standards
+
+**File Structure:**
+```
+src/
+├── components/
+│   └── ui/                    # Match existing folder name
+│       └── ComponentName/     # PascalCase folder
+│           ├── index.ts       # Re-exports
+│           ├── ComponentName.tsx
+│           ├── ComponentName.types.ts    # If separate types used
+│           ├── ComponentName.module.css  # If CSS modules
+│           ├── ComponentName.stories.tsx # If Storybook exists
+│           └── ComponentName.test.tsx    # If testing exists
+```
+
+**TypeScript Requirements:**
+- **Strict type safety** - no `any` types unless explicitly in existing codebase
+- **Forward refs** for all interactive components
+- **Polymorphic components** using `as` prop if pattern exists
+- **Variant props** using existing CVA/class-variance-authority or similar
+- **HTML attribute extension** - extend native element interfaces properly
+
+**Implementation Template:**
+```typescript
+import * as React from \'react\';
+import { cn } from \'@/lib/utils\';  // Use existing utility
+import { cva, type VariantProps } from \'class-variance-authority\';  // Or existing variant system
+
+// Use existing design tokens
+import { tokens } from \'@/styles/tokens\';  // Or existing token import path
+
+const componentVariants = cva(
+  \'base-classes-from-figma\',
+  {
+    variants: {
+      variant: {
+        default: \'bg-primary text-primary-foreground\',
+        secondary: \'bg-secondary text-secondary-foreground\',
+        // Map Figma variants exactly
+      },
+      size: {
+        default: \'h-10 px-4 py-2\',
+        sm: \'h-9 px-3\',
+        lg: \'h-11 px-8\',
+      },
+    },
+    defaultVariants: {
+      variant: \'default\',
+      size: \'default\',
+    },
+  }
+);
+
+export interface ComponentNameProps
+  extends React.HTMLAttributes<HTMLDivElement>,
+    VariantProps<typeof componentVariants> {
+  asChild?: boolean;
+  // Additional props from Figma analysis
+}
+
+const ComponentName = React.forwardRef<HTMLDivElement, ComponentNameProps>(
+  ({ className, variant, size, asChild = false, ...props }, ref) => {
+    // Implementation matching Figma specs exactly
+    return (
+      <div
+        className={cn(componentVariants({ variant, size, className }))}
+        ref={ref}
+        {...props}
+      />
+    );
+  }
+);
+
+ComponentName.displayName = \'ComponentName\';
+
+export { ComponentName, componentVariants };
+```
+
+### 4.2 Styling Implementation
+
+**Tailwind CSS (if used):**
+- **Use design token mapping** - map Figma variables to Tailwind config values
+- **Avoid arbitrary values** - use standard spacing scale (e.g., `p-4` not `p-[16px]`)
+- **Use CSS variables** from design tokens: `bg-[var(--color-primary)]` → map to `bg-primary`
+- **Responsive prefixes** - match Figma breakpoint frames (sm:, md:, lg:, xl:)
+
+**CSS Modules (if used):**
+- **Kebab-case class names** matching Figma layer names
+- **CSS custom properties** for all design tokens
+- **Composition patterns** matching existing component CSS
+
+**Styled Components (if used):**
+- **Theme provider integration** - use existing theme object structure
+- **Prop-based styling** - match Figma variant properties
+
+### 4.3 Asset Handling
+
+**Images/Icons:**
+- **Use existing icon system** - Lucide, Heroicons, or custom icon components
+- **SVG optimization** - use existing SVGR configuration or sprite sheets
+- **Image component** - use Next.js Image or existing optimized image component
+- **Placeholder strategy** - use existing placeholder patterns during development
+
+---
+
+## 5. QUALITY VERIFICATION CHECKLIST
+
+Before marking implementation complete, verify:
+
+**Visual Accuracy:**
+- [ ] Pixel-perfect spacing matches Figma (padding, margin, gap)
+- [ ] Colors match exactly (hex codes from design tokens)
+- [ ] Typography matches (font, size, weight, line-height, letter-spacing)
+- [ ] Border radius and shadows match Figma specs
+- [ ] Width/height constraints match (fixed vs fill vs hug)
+
+**Functional Requirements:**
+- [ ] All interactive states implemented (hover, active, disabled, focus)
+- [ ] Keyboard navigation works (tab order, focus indicators)
+- [ ] Screen reader accessibility (aria-labels, roles, descriptions)
+- [ ] Responsive behavior matches Figma breakpoints
+
+**Code Quality:**
+- [ ] No TypeScript errors
+- [ ] Follows existing ESLint/Prettier configuration
+- [ ] Matches existing component API patterns
+- [ ] Proper forward ref implementation
+- [ ] DisplayName set for debugging
+- [ ] Exports match existing patterns
+
+**Integration:**
+- [ ] Works with existing theme provider
+- [ ] Respects existing design token system
+- [ ] Compatible with existing form libraries if applicable
+- [ ] Storybook story created if existing pattern
+
+---
+
+## 6. ERROR HANDLING & EDGE CASES
+
+**When Figma MCP returns incomplete data:**
+- Fall back to image analysis with explicit measurement requests
+- Ask for specific node IDs if structure is unclear
+- Request design token variables separately from component structure
+
+**When design tokens conflict with existing repository:**
+- **Repository tokens take precedence** - map Figma values to existing token names
+- Document token mapping for design system consistency
+- Suggest design token updates if Figma represents new standard
+
+**When component patterns differ:**
+- **Always follow existing repository patterns** over Figma structure
+- Adapt Figma design to existing component architecture
+- Maintain visual fidelity while using established code patterns
+
+**When assets are unavailable:**
+- Use placeholder images with exact dimensions from Figma
+- Create SVG placeholders for icons using Figma specs
+- Document missing assets for later replacement
+
+---
+
+## 7. ADVANCED TECHNIQUES
+
+### 7.1 Component Composition Analysis
+If Figma shows complex components:
+- Identify slot patterns (header, content, footer, actions)
+- Map to React compound component pattern if existing
+- Preserve composition flexibility while maintaining design constraints
+
+### 7.2 Animation Implementation
+For Figma prototypes with interactions:
+- Extract transition timing (duration, easing curves)
+- Use existing animation library (Framer Motion, CSS transitions)
+- Implement reduced motion preferences
+- Match easing functions exactly (cubic-bezier values)
+
+### 7.3 Responsive Implementation
+For multi-breakpoint Figma designs:
+- Identify breakpoint values (mobile: 375px, tablet: 768px, desktop: 1440px)
+- Implement mobile-first or desktop-first based on existing codebase
+- Use container queries if existing pattern supports them
