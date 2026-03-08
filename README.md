@@ -7,3 +7,4 @@ AI agent skills for Claude code AI
 | Skill | Description | Added |
 |-------|-------------|-------|
 | [react-pr-reviewer](./react-pr-reviewer) | Performs a structured code review of React TypeScript pull requests or | 2026-03-08 |
+| [ts-error-explainer](./ts-error-explainer) |  | 2026-03-08 |
