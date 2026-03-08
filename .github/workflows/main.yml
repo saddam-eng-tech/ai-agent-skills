@@ -69,37 +69,37 @@ jobs:
           DESC=$(echo "$SKILL_CONTENT" | grep -m1 '^description:' | sed 's/description:[[:space:]]*//' | cut -c1-80)
           NEW_ROW="| [$SKILL_NAME](./$SKILL_NAME) | $DESC | $TODAY |"
 
-          # Fetch current README from the new branch
-          README_RESPONSE=$(gh api repos/$REPO/contents/README.md?ref=$BRANCH)
+          # Fetch README from branch and decode to file
+          README_RESPONSE=$(gh api "repos/$REPO/contents/README.md?ref=$BRANCH")
           README_SHA=$(echo "$README_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['sha'])")
-          README_CONTENT=$(echo "$README_RESPONSE" | python3 -c "import sys,json,base64; print(base64.b64decode(json.load(sys.stdin)['content']).decode())")
+          echo "$README_RESPONSE" | python3 -c "
+import sys,json,base64
+data=json.load(sys.stdin)
+open('README_current.md','wb').write(base64.b64decode(data['content']))
+"
 
-          # Update README content
-          UPDATED_README=$(python3 - <<PYEOF
-          import re, sys
+          # Update README using file I/O - no variable embedding
+          python3 - "$NEW_ROW" <<PYEOF
+import sys, re
 
-          content = """$README_CONTENT"""
-          new_row = """$NEW_ROW"""
+new_row = sys.argv[1]
+with open('README_current.md', 'r') as f:
+    content = f.read()
 
-          if '| Skill |' in content:
-              pattern = r'(\|[^\n]+\|\n)(?!\|)'
-              updated = re.sub(pattern, r'\1' + new_row + '\n', content, count=1, flags=re.MULTILINE)
-          else:
-              updated = content + f"""
+if '| Skill |' in content:
+    lines = content.splitlines(keepends=True)
+    last_table_line = max(i for i, l in enumerate(lines) if l.startswith('|'))
+    lines.insert(last_table_line + 1, new_row + '\n')
+    content = ''.join(lines)
+else:
+    content += f"\n\n## Skills\n\n| Skill | Description | Added |\n|-------|-------------|-------|\n{new_row}\n"
 
-          ## 🧠 Skills
-
-          | Skill | Description | Added |
-          |-------|-------------|-------|
-          {new_row}
-          """
-
-          print(updated, end='')
-          PYEOF
-          )
+with open('README_updated.md', 'w') as f:
+    f.write(content)
+PYEOF
 
           # ── Upload updated README via Contents API (verified commit) ──
-          README_B64=$(printf '%s' "$UPDATED_README" | base64 -w 0)
+          README_B64=$(base64 -w 0 README_updated.md)
 
           gh api repos/$REPO/contents/README.md \
             --method PUT \
