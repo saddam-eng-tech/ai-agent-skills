@@ -17,72 +17,97 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Parse issue and create skill
+      - name: Parse issue and publish skill via GitHub API
         env:
           ISSUE_BODY: ${{ github.event.issue.body }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
         run: |
-          # ── Extract skill name from first line ──
+          # ── Extract skill name ──
           SKILL_NAME=$(echo "$ISSUE_BODY" | head -1 | sed 's/skill-name:[[:space:]]*//' | tr -d '[:space:]')
 
           if [ -z "$SKILL_NAME" ]; then
-            gh issue comment $ISSUE_NUMBER --body "❌ Could not parse \`skill-name\` from the first line. Make sure the very first line is: \`skill-name: your-skill-name\`"
+            gh issue comment $ISSUE_NUMBER --body "❌ Could not parse \`skill-name\` from the first line."
             exit 1
           fi
 
           echo "Skill name: $SKILL_NAME"
 
-          # ── Extract SKILL.md content (everything after second ---) ──
-          SKILL_CONTENT=$(echo "$ISSUE_BODY" | awk 'BEGIN{count=0} /^---/{count++; next} count>=2{print}')
+          # ── Extract SKILL.md content ──
+          SKILL_CONTENT=$(echo "$ISSUE_BODY" | awk 'BEGIN{count=0} /^---/{count++; next} count>=1{print}')
 
           if [ -z "$SKILL_CONTENT" ]; then
-            gh issue comment $ISSUE_NUMBER --body "❌ Could not find SKILL.md content. Make sure there are two \`---\` lines separating the skill name from the content."
+            gh issue comment $ISSUE_NUMBER --body "❌ Could not find SKILL.md content after the \`---\` separator."
             exit 1
           fi
 
-          # ── Create and switch to new branch ──
+          # ── Get main branch SHA ──
+          MAIN_SHA=$(gh api repos/$REPO/git/ref/heads/main --jq '.object.sha')
+          echo "Main SHA: $MAIN_SHA"
+
+          # ── Create new branch via API ──
           BRANCH="skill/$SKILL_NAME"
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -b "$BRANCH"
+          gh api repos/$REPO/git/refs \
+            --method POST \
+            --field ref="refs/heads/$BRANCH" \
+            --field sha="$MAIN_SHA"
+          echo "Branch created: $BRANCH"
 
-          # ── Create skill folder and file ──
-          mkdir -p "$SKILL_NAME"
-          printf '%s\n' "$SKILL_CONTENT" > "$SKILL_NAME/SKILL.md"
-          echo "Created $SKILL_NAME/SKILL.md"
+          # ── Upload SKILL.md via Contents API (produces verified commit) ──
+          SKILL_B64=$(printf '%s' "$SKILL_CONTENT" | base64 -w 0)
 
-          # ── Update README skills table ──
+          gh api repos/$REPO/contents/$SKILL_NAME/SKILL.md \
+            --method PUT \
+            --field message="feat: add $SKILL_NAME skill" \
+            --field content="$SKILL_B64" \
+            --field branch="$BRANCH"
+          echo "SKILL.md committed"
+
+          # ── Build updated README ──
           TODAY=$(date +%Y-%m-%d)
           DESC=$(echo "$SKILL_CONTENT" | grep -m1 '^description:' | sed 's/description:[[:space:]]*//' | cut -c1-80)
           NEW_ROW="| [$SKILL_NAME](./$SKILL_NAME) | $DESC | $TODAY |"
 
-          if [ -f README.md ] && grep -q "| Skill |" README.md; then
-            python3 - <<PYEOF
-          import re
-          with open('README.md', 'r') as f:
-              content = f.read()
+          # Fetch current README from the new branch
+          README_RESPONSE=$(gh api repos/$REPO/contents/README.md?ref=$BRANCH)
+          README_SHA=$(echo "$README_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['sha'])")
+          README_CONTENT=$(echo "$README_RESPONSE" | python3 -c "import sys,json,base64; print(base64.b64decode(json.load(sys.stdin)['content']).decode())")
+
+          # Update README content
+          UPDATED_README=$(python3 - <<PYEOF
+          import re, sys
+
+          content = """$README_CONTENT"""
           new_row = """$NEW_ROW"""
-          pattern = r'(\|[^\n]+\|\n)(?!\|)'
-          updated = re.sub(pattern, r'\1' + new_row + '\n', content, count=1, flags=re.MULTILINE)
-          with open('README.md', 'w') as f:
-              f.write(updated)
-          PYEOF
-          else
-            cat >> README.md << MDEOF
+
+          if '| Skill |' in content:
+              pattern = r'(\|[^\n]+\|\n)(?!\|)'
+              updated = re.sub(pattern, r'\1' + new_row + '\n', content, count=1, flags=re.MULTILINE)
+          else:
+              updated = content + f"""
 
           ## 🧠 Skills
 
           | Skill | Description | Added |
           |-------|-------------|-------|
-          $NEW_ROW
-          MDEOF
-          fi
+          {new_row}
+          """
 
-          # ── Commit and push branch ──
-          git add "$SKILL_NAME/SKILL.md" README.md
-          git commit -m "feat: add $SKILL_NAME skill (closes #$ISSUE_NUMBER)"
-          git push origin "$BRANCH"
+          print(updated, end='')
+          PYEOF
+          )
+
+          # ── Upload updated README via Contents API (verified commit) ──
+          README_B64=$(printf '%s' "$UPDATED_README" | base64 -w 0)
+
+          gh api repos/$REPO/contents/README.md \
+            --method PUT \
+            --field message="docs: update README with $SKILL_NAME" \
+            --field content="$README_B64" \
+            --field sha="$README_SHA" \
+            --field branch="$BRANCH"
+          echo "README committed"
 
           # ── Create PR ──
           PR_URL=$(gh pr create \
