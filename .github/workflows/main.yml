@@ -6,8 +6,8 @@ on:
 
 jobs:
   publish-skill:
-    # Only run if the issue has the "new-skill" label
-    if: contains(github.event.issue.labels.*.name, 'new-skill')
+    # Only run if the issue has the "new-skills" label
+    if: contains(github.event.issue.labels.*.name, 'new-skills')
     runs-on: ubuntu-latest
     permissions:
       contents: write
