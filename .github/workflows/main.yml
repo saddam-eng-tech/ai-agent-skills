@@ -11,88 +11,168 @@ jobs:
     permissions:
       contents: write
       issues: write
+      pull-requests: write
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Parse issue and create skill
+      - name: Parse and publish via GitHub API
         env:
           ISSUE_BODY: ${{ github.event.issue.body }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
         run: |
-          # ── Extract skill name from first line: "skill-name: my-skill" ──
-          SKILL_NAME=$(echo "$ISSUE_BODY" | head -1 | sed 's/skill-name:[[:space:]]*//' | tr -d '[:space:]')
+          python3 << 'PYEOF'
+          import os, re, json, base64, urllib.request, urllib.error
+          from datetime import date
 
-          if [ -z "$SKILL_NAME" ]; then
-            gh issue comment $ISSUE_NUMBER --body "❌ Could not parse \`skill-name\` from the first line. Make sure the very first line is: \`skill-name: your-skill-name\`"
-            exit 1
-          fi
+          token       = os.environ['GH_TOKEN']
+          repo        = os.environ['REPO']
+          issue_body  = os.environ['ISSUE_BODY']
+          issue_num   = os.environ['ISSUE_NUMBER']
+          api         = f"https://api.github.com/repos/{repo}"
 
-          echo "Skill name: $SKILL_NAME"
+          def gh(method, path, payload=None):
+              url  = f"{api}{path}"
+              data = json.dumps(payload).encode() if payload else None
+              req  = urllib.request.Request(url, data=data, method=method)
+              req.add_header("Authorization", f"token {token}")
+              req.add_header("Accept", "application/vnd.github.v3+json")
+              req.add_header("Content-Type", "application/json")
+              try:
+                  with urllib.request.urlopen(req) as r:
+                      return r.status, json.loads(r.read())
+              except urllib.error.HTTPError as e:
+                  return e.code, json.loads(e.read())
 
-          # ── Extract SKILL.md content (everything after the second ---) ──
-          SKILL_CONTENT=$(echo "$ISSUE_BODY" | awk 'BEGIN{count=0} /^---/{count++; next} count>=2{print}')
+          def comment(msg):
+              gh("POST", f"/issues/{issue_num}/comments", {"body": msg})
 
-          if [ -z "$SKILL_CONTENT" ]; then
-            gh issue comment $ISSUE_NUMBER --body "❌ Could not find SKILL.md content. Make sure there are two \`---\` lines separating the skill name from the content."
-            exit 1
-          fi
+          def close_issue():
+              gh("PATCH", f"/issues/{issue_num}", {"state": "closed"})
 
-          # ── Create skill folder and file ──
-          mkdir -p "$SKILL_NAME"
-          printf '%s\n' "$SKILL_CONTENT" > "$SKILL_NAME/SKILL.md"
-          echo "Created $SKILL_NAME/SKILL.md"
-          cat "$SKILL_NAME/SKILL.md"
+          # ── Parse skill name ──────────────────────────────────────────────
+          first_line = issue_body.strip().split('\n')[0]
+          match = re.match(r'skill-name:\s*(.+)', first_line)
+          if not match:
+              comment("❌ First line must be: `skill-name: your-skill-name`")
+              exit(1)
 
-          # ── Update README skills table ──
-          TODAY=$(date +%Y-%m-%d)
-          DESC=$(echo "$SKILL_CONTENT" | grep -m1 '^description:' | sed 's/description:[[:space:]]*//' | cut -c1-80)
+          skill_name = match.group(1).strip()
+          print(f"Skill name: {skill_name}")
 
-          NEW_ROW="| [$SKILL_NAME](./$SKILL_NAME) | $DESC | $TODAY |"
+          # ── Parse SKILL.md content (after 2nd ---) ───────────────────────
+          parts = re.split(r'^---\s*$', issue_body, flags=re.MULTILINE)
+          # parts[0] = skill-name line, parts[1] = frontmatter, parts[2+] = body
+          if len(parts) < 3:
+              comment("❌ Could not find SKILL.md content. Need two `---` separators.")
+              exit(1)
 
-          if [ -f README.md ] && grep -q "| Skill |" README.md; then
-            # Append new row after last table row
-            python3 - <<PYEOF
-          import re
+          skill_content = ('---\n' + parts[1].strip() + '\n---\n' + '---\n'.join(parts[2:])).strip()
+          print(f"Content length: {len(skill_content)} chars")
 
-          with open('README.md', 'r') as f:
-              content = f.read()
+          # ── Get main branch SHA ───────────────────────────────────────────
+          status, ref_data = gh("GET", "/git/ref/heads/main")
+          if status != 200:
+              comment(f"❌ Could not get main branch ref: {ref_data.get('message')}")
+              exit(1)
+          main_sha = ref_data['object']['sha']
 
-          new_row = """$NEW_ROW"""
-          # Find last table row and append after it
-          pattern = r'(\|[^\n]+\|\n)(?!\|)'
-          replacement = r'\1' + new_row + '\n'
-          updated = re.sub(pattern, replacement, content, count=1, flags=re.MULTILINE)
+          # ── Create new branch ─────────────────────────────────────────────
+          branch = f"skill/{skill_name}"
+          status, _ = gh("POST", "/git/refs", {
+              "ref": f"refs/heads/{branch}",
+              "sha": main_sha
+          })
+          if status not in (200, 201, 422):  # 422 = branch exists, that's ok
+              comment(f"❌ Could not create branch: {status}")
+              exit(1)
 
-          with open('README.md', 'w') as f:
-              f.write(updated)
+          # ── Create/update SKILL.md via Contents API (signed by GitHub) ───
+          file_path = f"{skill_name}/SKILL.md"
+          encoded   = base64.b64encode(skill_content.encode()).decode()
+
+          # Check if file exists (get SHA for update)
+          status, existing = gh("GET", f"/contents/{file_path}?ref={branch}")
+          sha = existing.get('sha') if status == 200 else None
+
+          payload = {
+              "message": f"feat: add {skill_name} skill",
+              "content": encoded,
+              "branch":  branch,
+          }
+          if sha:
+              payload["sha"] = sha
+
+          status, result = gh("PUT", f"/contents/{file_path}", payload)
+          if status not in (200, 201):
+              comment(f"❌ Failed to create file: {result.get('message')}")
+              exit(1)
+          print(f"Created {file_path} on branch {branch}")
+
+          # ── Update README on the branch ───────────────────────────────────
+          today = date.today().isoformat()
+          desc_match = re.search(r'^description:\s*(.+)', skill_content, re.MULTILINE)
+          desc = desc_match.group(1).strip()[:80] if desc_match else "No description"
+          new_row = f"| [{skill_name}](./{skill_name}) | {desc} | {today} |"
+
+          status, readme_data = gh("GET", f"/contents/README.md?ref={branch}")
+          if status == 200:
+              readme = base64.b64decode(readme_data['content'].replace('\n','')).decode()
+              readme_sha = readme_data['sha']
+          else:
+              readme = "# AI Agent Skills\n"
+              readme_sha = None
+
+          if "| Skill |" in readme:
+              # Insert before first blank line after last table row
+              readme = re.sub(
+                  r'(\|[^\n]+\|\n)(\n)',
+                  lambda m: m.group(1) + new_row + '\n' + m.group(2),
+                  readme, count=1
+              )
+          else:
+              readme += f"\n\n## 🧠 Skills\n\n| Skill | Description | Added |\n|-------|-------------|-------|\n{new_row}\n"
+
+          readme_payload = {
+              "message": "docs: update README with new skill",
+              "content": base64.b64encode(readme.encode()).decode(),
+              "branch":  branch,
+          }
+          if readme_sha:
+              readme_payload["sha"] = readme_sha
+
+          gh("PUT", "/contents/README.md", readme_payload)
           print("README updated")
+
+          # ── Open PR ───────────────────────────────────────────────────────
+          status, pr = gh("POST", "/pulls", {
+              "title": f"feat: add {skill_name} skill",
+              "head":  branch,
+              "base":  "main",
+              "body":  f"Auto-generated from issue #{issue_num}\n\nAdds `{skill_name}/SKILL.md`",
+          })
+          if status not in (200, 201):
+              comment(f"❌ Failed to create PR: {pr.get('message')}")
+              exit(1)
+
+          pr_url = pr['html_url']
+          pr_num = pr['number']
+          print(f"PR created: {pr_url}")
+
+          # ── Auto-merge PR ─────────────────────────────────────────────────
+          merge_status, merge_result = gh("PUT", f"/pulls/{pr_num}/merge", {
+              "merge_method": "squash",
+              "commit_title": f"feat: add {skill_name} skill (closes #{issue_num})",
+          })
+
+          if merge_status == 200:
+              comment(f"✅ **`{skill_name}`** published!\n\n📄 [`{skill_name}/SKILL.md`](../blob/main/{skill_name}/SKILL.md)\n\nPR: {pr_url}")
+              close_issue()
+          else:
+              # Merge failed (e.g. needs approval) — just leave PR open
+              comment(f"🔀 PR opened for review: {pr_url}\n\nAuto-merge failed: {merge_result.get('message','unknown')}. Please merge manually.")
+
           PYEOF
-          else
-            # Create fresh skills table
-            cat >> README.md << MDEOF
-
-          ## 🧠 Skills
-
-          | Skill | Description | Added |
-          |-------|-------------|-------|
-          $NEW_ROW
-          MDEOF
-          fi
-
-          # ── Commit and push ──
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add "$SKILL_NAME/SKILL.md" README.md
-          git commit -m "feat: add $SKILL_NAME skill (closes #$ISSUE_NUMBER)"
-          git push
-
-          # ── Comment and close issue ──
-          gh issue comment $ISSUE_NUMBER --body "✅ **\`$SKILL_NAME\`** published!
-
-          📄 [\`$SKILL_NAME/SKILL.md\`](../blob/main/$SKILL_NAME/SKILL.md)
-
-          Closing automatically."
-          gh issue close $ISSUE_NUMBER
