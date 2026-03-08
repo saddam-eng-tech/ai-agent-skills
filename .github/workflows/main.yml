@@ -17,35 +17,6 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Write helper scripts
-        run: |
-          cat > /tmp/decode_readme.py << 'EOF'
-import sys, json, base64
-data = json.load(sys.stdin)
-open('README_current.md', 'wb').write(base64.b64decode(data['content']))
-print(data['sha'])
-EOF
-
-          cat > /tmp/update_readme.py << 'EOF'
-import sys
-
-new_row = sys.argv[1]
-
-with open('README_current.md', 'r') as f:
-    content = f.read()
-
-if '| Skill |' in content:
-    lines = content.splitlines(keepends=True)
-    last_table_line = max(i for i, l in enumerate(lines) if l.startswith('|'))
-    lines.insert(last_table_line + 1, new_row + '\n')
-    content = ''.join(lines)
-else:
-    content += f"\n\n## Skills\n\n| Skill | Description | Added |\n|-------|-------------|-------|\n{new_row}\n"
-
-with open('README_updated.md', 'w') as f:
-    f.write(content)
-EOF
-
       - name: Parse issue and publish skill
         env:
           ISSUE_BODY: ${{ github.event.issue.body }}
@@ -71,16 +42,10 @@ EOF
             exit 1
           fi
 
-          # ── Get main branch SHA ──
+          # ── Get main branch SHA and create branch ──
           MAIN_SHA=$(gh api repos/$REPO/git/ref/heads/main --jq '.object.sha')
-          echo "Main SHA: $MAIN_SHA"
-
-          # ── Create branch via API ──
           BRANCH="skill/$SKILL_NAME-$ISSUE_NUMBER"
-          gh api repos/$REPO/git/refs \
-            --method POST \
-            --field ref="refs/heads/$BRANCH" \
-            --field sha="$MAIN_SHA"
+          gh api repos/$REPO/git/refs --method POST --field ref="refs/heads/$BRANCH" --field sha="$MAIN_SHA"
           echo "Branch created: $BRANCH"
 
           # ── Upload SKILL.md via Contents API (verified commit) ──
@@ -92,16 +57,34 @@ EOF
             --field branch="$BRANCH"
           echo "SKILL.md committed"
 
-          # ── Fetch and decode README to file ──
+          # ── Fetch README from branch ──
           TODAY=$(date +%Y-%m-%d)
           DESC=$(echo "$SKILL_CONTENT" | grep -m1 '^description:' | sed 's/description:[[:space:]]*//' | cut -c1-80)
           NEW_ROW="| [$SKILL_NAME](./$SKILL_NAME) | $DESC | $TODAY |"
 
-          README_SHA=$(gh api "repos/$REPO/contents/README.md?ref=$BRANCH" | python3 /tmp/decode_readme.py)
-          echo "README SHA: $README_SHA"
+          README_JSON=$(gh api "repos/$REPO/contents/README.md?ref=$BRANCH")
+          README_SHA=$(echo "$README_JSON" | jq -r '.sha')
+          echo "$README_JSON" | jq -r '.content' | tr -d '\n' | base64 -d > README_current.md
+          echo "README fetched"
 
-          # ── Update README ──
-          python3 /tmp/update_readme.py "$NEW_ROW"
+          # ── Update README with new row using awk ──
+          if grep -q "| Skill |" README_current.md; then
+            awk -v row="$NEW_ROW" '{print} /^\|/ && !seen{last=NR} END{seen=1}' README_current.md > README_updated.md
+            # append after last table row
+            awk -v row="$NEW_ROW" '
+              /^\|/{last=NR; lastline=$0}
+              {lines[NR]=$0}
+              END{
+                for(i=1;i<=NR;i++){
+                  print lines[i];
+                  if(i==last) print row
+                }
+              }
+            ' README_current.md > README_updated.md
+          else
+            cp README_current.md README_updated.md
+            printf '\n\n## Skills\n\n| Skill | Description | Added |\n|-------|-------------|-------|\n%s\n' "$NEW_ROW" >> README_updated.md
+          fi
 
           # ── Upload updated README via Contents API (verified commit) ──
           README_B64=$(base64 -w 0 README_updated.md)
@@ -116,7 +99,7 @@ EOF
           # ── Create PR ──
           PR_URL=$(gh pr create \
             --title "feat: add $SKILL_NAME skill" \
-            --body "Automated skill publish from issue #$ISSUE_NUMBER. Closes #$ISSUE_NUMBER" \
+            --body "Closes #$ISSUE_NUMBER" \
             --base main \
             --head "$BRANCH")
           echo "PR created: $PR_URL"
@@ -128,5 +111,5 @@ EOF
           gh pr merge "$PR_URL" --auto --merge --delete-branch
 
           # ── Comment and close issue ──
-          gh issue comment $ISSUE_NUMBER --body "✅ **\`$SKILL_NAME\`** published! 📄 [$SKILL_NAME/SKILL.md](../blob/main/$SKILL_NAME/SKILL.md)"
+          gh issue comment $ISSUE_NUMBER --body "✅ **$SKILL_NAME** published successfully."
           gh issue close $ISSUE_NUMBER 2>/dev/null || true
