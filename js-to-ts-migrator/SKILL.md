@@ -1,13 +1,3 @@
-name: js-to-ts-migrator
-description: >
-  Converts a JavaScript React component file (.jsx or .js) to a fully-typed
-  TypeScript file (.tsx or .ts), inferring prop types from usage, adding event
-  handler types, typing useState and useRef, and replacing PropTypes with
-  TypeScript interfaces. Trigger when a user says "convert this to TypeScript",
-  "migrate to TS", "add types to my component", "turn this .jsx into .tsx",
-  or "help me migrate this JavaScript React file". Also trigger when a user
-  pastes a .jsx file and asks for TypeScript help or type safety.
-
 # JS → TS Migrator
 
 Converts React JavaScript files to production-grade TypeScript by inferring
