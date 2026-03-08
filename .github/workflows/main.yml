@@ -17,72 +17,20 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Parse issue and publish skill via GitHub API
-        env:
-          ISSUE_BODY: ${{ github.event.issue.body }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}
+      - name: Write helper scripts
         run: |
-          # ── Extract skill name ──
-          SKILL_NAME=$(echo "$ISSUE_BODY" | head -1 | sed 's/skill-name:[[:space:]]*//' | tr -d '[:space:]')
+          cat > /tmp/decode_readme.py << 'EOF'
+import sys, json, base64
+data = json.load(sys.stdin)
+open('README_current.md', 'wb').write(base64.b64decode(data['content']))
+print(data['sha'])
+EOF
 
-          if [ -z "$SKILL_NAME" ]; then
-            gh issue comment $ISSUE_NUMBER --body "❌ Could not parse \`skill-name\` from the first line."
-            exit 1
-          fi
-
-          echo "Skill name: $SKILL_NAME"
-
-          # ── Extract SKILL.md content ──
-          SKILL_CONTENT=$(echo "$ISSUE_BODY" | awk 'BEGIN{count=0} /^---/{count++; next} count>=1{print}')
-
-          if [ -z "$SKILL_CONTENT" ]; then
-            gh issue comment $ISSUE_NUMBER --body "❌ Could not find SKILL.md content after the \`---\` separator."
-            exit 1
-          fi
-
-          # ── Get main branch SHA ──
-          MAIN_SHA=$(gh api repos/$REPO/git/ref/heads/main --jq '.object.sha')
-          echo "Main SHA: $MAIN_SHA"
-
-          # ── Create new branch via API ──
-          BRANCH="skill/$SKILL_NAME-$ISSUE_NUMBER"
-          gh api repos/$REPO/git/refs \
-            --method POST \
-            --field ref="refs/heads/$BRANCH" \
-            --field sha="$MAIN_SHA"
-          echo "Branch created: $BRANCH"
-
-          # ── Upload SKILL.md via Contents API (produces verified commit) ──
-          SKILL_B64=$(printf '%s' "$SKILL_CONTENT" | base64 -w 0)
-
-          gh api repos/$REPO/contents/$SKILL_NAME/SKILL.md \
-            --method PUT \
-            --field message="feat: add $SKILL_NAME skill" \
-            --field content="$SKILL_B64" \
-            --field branch="$BRANCH"
-          echo "SKILL.md committed"
-
-          # ── Build updated README ──
-          TODAY=$(date +%Y-%m-%d)
-          DESC=$(echo "$SKILL_CONTENT" | grep -m1 '^description:' | sed 's/description:[[:space:]]*//' | cut -c1-80)
-          NEW_ROW="| [$SKILL_NAME](./$SKILL_NAME) | $DESC | $TODAY |"
-
-          # Fetch README from branch and decode to file
-          README_RESPONSE=$(gh api "repos/$REPO/contents/README.md?ref=$BRANCH")
-          README_SHA=$(echo "$README_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['sha'])")
-          echo "$README_RESPONSE" | python3 -c "
-import sys,json,base64
-data=json.load(sys.stdin)
-open('README_current.md','wb').write(base64.b64decode(data['content']))
-"
-
-          # Update README using file I/O - no variable embedding
-          python3 - "$NEW_ROW" <<PYEOF
-import sys, re
+          cat > /tmp/update_readme.py << 'EOF'
+import sys
 
 new_row = sys.argv[1]
+
 with open('README_current.md', 'r') as f:
     content = f.read()
 
@@ -96,11 +44,67 @@ else:
 
 with open('README_updated.md', 'w') as f:
     f.write(content)
-PYEOF
+EOF
+
+      - name: Parse issue and publish skill
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          # ── Extract skill name ──
+          SKILL_NAME=$(echo "$ISSUE_BODY" | head -1 | sed 's/skill-name:[[:space:]]*//' | tr -d '[:space:]')
+
+          if [ -z "$SKILL_NAME" ]; then
+            gh issue comment $ISSUE_NUMBER --body "❌ Could not parse skill-name from the first line."
+            exit 1
+          fi
+
+          echo "Skill name: $SKILL_NAME"
+
+          # ── Extract SKILL.md content (after first ---) ──
+          SKILL_CONTENT=$(echo "$ISSUE_BODY" | awk 'BEGIN{count=0} /^---/{count++; next} count>=1{print}')
+
+          if [ -z "$SKILL_CONTENT" ]; then
+            gh issue comment $ISSUE_NUMBER --body "❌ Could not find SKILL.md content after the --- separator."
+            exit 1
+          fi
+
+          # ── Get main branch SHA ──
+          MAIN_SHA=$(gh api repos/$REPO/git/ref/heads/main --jq '.object.sha')
+          echo "Main SHA: $MAIN_SHA"
+
+          # ── Create branch via API ──
+          BRANCH="skill/$SKILL_NAME-$ISSUE_NUMBER"
+          gh api repos/$REPO/git/refs \
+            --method POST \
+            --field ref="refs/heads/$BRANCH" \
+            --field sha="$MAIN_SHA"
+          echo "Branch created: $BRANCH"
+
+          # ── Upload SKILL.md via Contents API (verified commit) ──
+          SKILL_B64=$(printf '%s' "$SKILL_CONTENT" | base64 -w 0)
+          gh api repos/$REPO/contents/$SKILL_NAME/SKILL.md \
+            --method PUT \
+            --field message="feat: add $SKILL_NAME skill" \
+            --field content="$SKILL_B64" \
+            --field branch="$BRANCH"
+          echo "SKILL.md committed"
+
+          # ── Fetch and decode README to file ──
+          TODAY=$(date +%Y-%m-%d)
+          DESC=$(echo "$SKILL_CONTENT" | grep -m1 '^description:' | sed 's/description:[[:space:]]*//' | cut -c1-80)
+          NEW_ROW="| [$SKILL_NAME](./$SKILL_NAME) | $DESC | $TODAY |"
+
+          README_SHA=$(gh api "repos/$REPO/contents/README.md?ref=$BRANCH" | python3 /tmp/decode_readme.py)
+          echo "README SHA: $README_SHA"
+
+          # ── Update README ──
+          python3 /tmp/update_readme.py "$NEW_ROW"
 
           # ── Upload updated README via Contents API (verified commit) ──
           README_B64=$(base64 -w 0 README_updated.md)
-
           gh api repos/$REPO/contents/README.md \
             --method PUT \
             --field message="docs: update README with $SKILL_NAME" \
@@ -112,33 +116,17 @@ PYEOF
           # ── Create PR ──
           PR_URL=$(gh pr create \
             --title "feat: add $SKILL_NAME skill" \
-            --body "Automated skill publish from issue #$ISSUE_NUMBER.
-
-          **Skill:** \`$SKILL_NAME\`
-          **Description:** $DESC
-
-          Closes #$ISSUE_NUMBER" \
+            --body "Automated skill publish from issue #$ISSUE_NUMBER. Closes #$ISSUE_NUMBER" \
             --base main \
             --head "$BRANCH")
-
-
-
-
-
-
           echo "PR created: $PR_URL"
 
-          # ── Approve PR using PAT (GITHUB_TOKEN can't approve its own PR) ──
+          # ── Approve PR using PAT ──
           GH_TOKEN="${{ secrets.PAT_TOKEN }}" gh pr review "$PR_URL" --approve --body "Auto-approved."
 
           # ── Auto-merge PR ──
           gh pr merge "$PR_URL" --auto --merge --delete-branch
 
-          # ── Comment on issue ──
-          gh issue comment $ISSUE_NUMBER --body "✅ **\`$SKILL_NAME\`** published!
-
-          📄 [\`$SKILL_NAME/SKILL.md\`](../blob/main/$SKILL_NAME/SKILL.md)
-          🔀 PR merged: $PR_URL"
-
-          # ── Explicitly close the issue ──
+          # ── Comment and close issue ──
+          gh issue comment $ISSUE_NUMBER --body "✅ **\`$SKILL_NAME\`** published! 📄 [$SKILL_NAME/SKILL.md](../blob/main/$SKILL_NAME/SKILL.md)"
           gh issue close $ISSUE_NUMBER 2>/dev/null || true
