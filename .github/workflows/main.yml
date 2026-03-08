@@ -1,0 +1,90 @@
+name: Publish Skill from Issue
+
+on:
+  issues:
+    types: [opened, reopened]
+
+jobs:
+  publish-skill:
+    # Only run if the issue has the "new-skill" label
+    if: contains(github.event.issue.labels.*.name, 'new-skill')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Parse issue and create skill
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # ── Extract skill name from first line: "skill-name: my-skill" ──
+          SKILL_NAME=$(echo "$ISSUE_BODY" | head -1 | sed 's/skill-name:[[:space:]]*//' | tr -d '[:space:]')
+
+          if [ -z "$SKILL_NAME" ]; then
+            echo "ERROR: Could not parse skill-name from issue body"
+            gh issue comment $ISSUE_NUMBER --body "❌ Could not parse \`skill-name\` from the first line. Please follow the template."
+            exit 1
+          fi
+
+          echo "Skill name: $SKILL_NAME"
+
+          # ── Extract SKILL.md content (everything after the --- separator) ──
+          SKILL_CONTENT=$(echo "$ISSUE_BODY" | awk '/^---$/{found++; next} found>=2{print}')
+
+          if [ -z "$SKILL_CONTENT" ]; then
+            echo "ERROR: Could not find skill content after --- separator"
+            gh issue comment $ISSUE_NUMBER --body "❌ Could not find SKILL.md content after the \`---\` separator. Please follow the template."
+            exit 1
+          fi
+
+          # ── Create skill folder and file ──
+          mkdir -p "$SKILL_NAME"
+          printf '%s' "$SKILL_CONTENT" > "$SKILL_NAME/SKILL.md"
+          echo "Created $SKILL_NAME/SKILL.md"
+
+          # ── Update README skills table ──
+          TODAY=$(date +%Y-%m-%d)
+          DESC=$(echo "$SKILL_CONTENT" | grep -m1 '^description:' | sed 's/description:[[:space:]]*//' | cut -c1-80)
+
+          NEW_ROW="| [$SKILL_NAME](./$SKILL_NAME) | $DESC | $TODAY |"
+
+          if grep -q "| Skill |" README.md 2>/dev/null; then
+            # Append row before the blank line after the table
+            awk -v row="$NEW_ROW" '
+              /^\| Skill \|/ { in_table=1 }
+              in_table && /^$/ { print row; in_table=0 }
+              { print }
+            ' README.md > README.tmp && mv README.tmp README.md
+          else
+            # Create table from scratch
+            cat >> README.md << EOF
+
+          ## 🧠 Skills
+
+          | Skill | Description | Added |
+          |-------|-------------|-------|
+          $NEW_ROW
+          EOF
+          fi
+
+          # ── Commit ──
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "$SKILL_NAME/SKILL.md" README.md
+          git commit -m "feat: add $SKILL_NAME skill (closes #$ISSUE_NUMBER)"
+          git push
+
+          # ── Close issue with success comment ──
+          gh issue comment $ISSUE_NUMBER --body "✅ Skill \`$SKILL_NAME\` published successfully!
+
+          📄 File: [\`$SKILL_NAME/SKILL.md\`](../blob/main/$SKILL_NAME/SKILL.md)
+
+          Closing this issue automatically."
+          gh issue close $ISSUE_NUMBER
