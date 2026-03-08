@@ -1,32 +1,3 @@
----
-
----
-
-name: react-pr-reviewer
-description: Performs a structured code review of React TypeScript pull requests or
-  changed files, categorised by Security, Type Safety, Performance,
-  Architecture, Accessibility, and Testing — with BLOCK/WARN/APPROVE verdicts.
-  Trigger when a user pastes a PR diff, asks "review this code", "can you
-  check this PR", "give feedback on my React code", "review this component",
-  or asks about code quality of React/TypeScript files. Also trigger when
-  a user says "what should I look for in this PR" or "is this code ok to merge
----
-
-# Your Skill Title
-
----
-
-name: react-pr-reviewer
-description: >
-  Performs a structured code review of React TypeScript pull requests or
-  changed files, categorised by Security, Type Safety, Performance,
-  Architecture, Accessibility, and Testing — with BLOCK/WARN/APPROVE verdicts.
-  Trigger when a user pastes a PR diff, asks "review this code", "can you
-  check this PR", "give feedback on my React code", "review this component",
-  or asks about code quality of React/TypeScript files. Also trigger when
-  a user says "what should I look for in this PR" or "is this code ok to merge".
----
-
 # React PR Reviewer
 
 Produces a fast, prioritised code review of React/TypeScript changes —
