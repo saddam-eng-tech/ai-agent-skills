@@ -2,7 +2,7 @@
 AI agent skills for Claude code AI
 
 
-## 🧠 Skills
+## Skills
 
 | Skill | Description | Added |
 |-------|-------------|-------|
