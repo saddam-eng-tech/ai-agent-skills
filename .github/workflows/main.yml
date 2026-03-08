@@ -139,3 +139,6 @@ jobs:
 
           📄 [\`$SKILL_NAME/SKILL.md\`](../blob/main/$SKILL_NAME/SKILL.md)
           🔀 PR merged: $PR_URL"
+
+          # ── Explicitly close the issue ──
+          gh issue close $ISSUE_NUMBER 2>/dev/null || true
