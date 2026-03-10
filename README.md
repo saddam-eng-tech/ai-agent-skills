@@ -14,3 +14,4 @@ AI agent skills for Claude code AI
 | [component-splitter](./component-splitter) | Analyses a large (100+ line) React component, identifies natural split boundarie | 2026-03-09 |
 | [component-docs](./component-docs) | Generates JSDoc comments for a React TypeScript component's props, functions, an | 2026-03-09 |
 | [go-grpc-service-scaffolder](./go-grpc-service-scaffolder) | Scaffolds a complete, production-ready Go gRPC microservice following Carousell- | 2026-03-09 |
+| [go-otel-setup](./go-otel-setup) | Generates a complete OpenTelemetry observability package for a Go gRPC microserv | 2026-03-10 |
