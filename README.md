@@ -17,3 +17,4 @@ AI agent skills for Claude code AI
 | [go-otel-setup](./go-otel-setup) | Generates a complete OpenTelemetry observability package for a Go gRPC microserv | 2026-03-10 |
 | [go-error-mapper](./go-error-mapper) | Generates a typed domain error package for Go microservices that maps domain err | 2026-03-10 |
 | [go-sqlc-repo](./go-sqlc-repo) | Generates a type-safe repository layer from a SQL schema using sqlc — includin | 2026-03-10 |
+| [go-integration-tests](./go-integration-tests) | Scaffolds a full integration test suite for a Go service using testcontainers-go | 2026-03-10 |
