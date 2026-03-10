@@ -18,3 +18,4 @@ AI agent skills for Claude code AI
 | [go-error-mapper](./go-error-mapper) | Generates a typed domain error package for Go microservices that maps domain err | 2026-03-10 |
 | [go-sqlc-repo](./go-sqlc-repo) | Generates a type-safe repository layer from a SQL schema using sqlc — includin | 2026-03-10 |
 | [go-outbox-pattern](./go-outbox-pattern) | Scaffolds the transactional outbox pattern for a Go microservice — SQL migrati | 2026-03-10 |
+| [go-grpc-client](./go-grpc-client) | Generates a typed gRPC client factory for calling internal Go microservices with | 2026-03-10 |
