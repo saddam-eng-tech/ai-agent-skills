@@ -21,3 +21,4 @@ AI agent skills for Claude code AI
 | [go-grpc-client](./go-grpc-client) | Generates a typed gRPC client factory for calling internal Go microservices with | 2026-03-10 |
 | [go-goroutine-auditor](./go-goroutine-auditor) | Reads Go source files and audits every goroutine launch for missing context canc | 2026-03-10 |
 | [go-cursor-pagination](./go-cursor-pagination) | Generates a reusable cursor-based pagination package for Go microservices with c | 2026-03-10 |
+| [go-dev-compose](./go-dev-compose) | Generates a production-quality docker-compose.yml for local development of Go mi | 2026-03-10 |
