@@ -24,3 +24,4 @@ AI agent skills for Claude code AI
 | [go-dev-compose](./go-dev-compose) | Generates a production-quality docker-compose.yml for local development of Go mi | 2026-03-10 |
 | [go-test-skeleton](./go-test-skeleton) | Reads a Go service interface and generates a complete _test.go file with gomock  | 2026-03-10 |
 | [go-proto-wiring](./go-proto-wiring) | Reads a .proto file and generates the full Go handler, service interface, and pr | 2026-03-10 |
+| [go-migration-gen](./go-migration-gen) | Generates a golang-migrate compatible SQL migration file from a Go domain struct | 2026-03-10 |
