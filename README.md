@@ -23,6 +23,7 @@ AI agent skills for Claude code AI
 | [go-graceful-shutdown](./go-graceful-shutdown) | Generates a graceful shutdown manager for Go microservices that handles OS signa | 2026-03-10 |
 | [go-goroutine-auditor](./go-goroutine-auditor) | Reads Go source files and audits every goroutine launch for missing context canc | 2026-03-10 |
 | [go-cursor-pagination](./go-cursor-pagination) | Generates a reusable cursor-based pagination package for Go microservices with c | 2026-03-10 |
+| [go-lint-config](./go-lint-config) | Generates a production-grade .golangci.yml configuration for Go microservices wi | 2026-03-10 |
 | [go-dev-compose](./go-dev-compose) | Generates a production-quality docker-compose.yml for local development of Go mi | 2026-03-10 |
 | [go-test-skeleton](./go-test-skeleton) | Reads a Go service interface and generates a complete _test.go file with gomock  | 2026-03-10 |
 | [go-proto-wiring](./go-proto-wiring) | Reads a .proto file and generates the full Go handler, service interface, and pr | 2026-03-10 |
