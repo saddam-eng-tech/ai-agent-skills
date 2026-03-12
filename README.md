@@ -90,6 +90,7 @@ git clone https://github.com/saddam-eng-tech/ai-agent-skills.git
 |-------|-------------|
 | [spec-md-generator](./spec-md-generator) | Generates a full `spec.md` through a structured interview with the agent |
 | [reverse-spec-writer](./reverse-spec-writer) | Reverse-engineers `spec.md` from an existing codebase |
+| [multi-agent-planner](./multi-agent-planner) | Designs complete multi-agent AI workflows with a planner orchestrator and specia | 2026-03-12 |
 
 ---
 
