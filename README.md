@@ -91,6 +91,10 @@ git clone https://github.com/saddam-eng-tech/ai-agent-skills.git
 | [spec-md-generator](./spec-md-generator) | Generates a full `spec.md` through a structured interview with the agent |
 | [reverse-spec-writer](./reverse-spec-writer) | Reverse-engineers `spec.md` from an existing codebase |
 | [multi-agent-planner](./multi-agent-planner) | Designs complete multi-agent AI workflows with a planner orchestrator and specia | 2026-03-12 |
+| [agent-trace-analyzer](./agent-trace-analyzer) | Examines Claude Code agent session logs and traces to explain decisions made, id | 2026-03-12 |
+| [rag-gap-auditor](./rag-gap-auditor) | Identifies knowledge gaps in RAG (Retrieval-Augmented Generation) setups by runn | 2026-03-12 |
+| [llm-eval-scaffolder](./llm-eval-scaffolder) | Builds LLM evaluation pipelines with structured test cases, LLM-as-judge prompts | 2026-03-12 |
+| [token-cost-estimator](./token-cost-estimator) | Calculates token usage and estimated API costs for Claude tasks by analysing pro | 2026-03-12 |
 
 ---
 
@@ -123,4 +127,4 @@ Got a skill that saves you time every week? **Share it.**
 ---
 
 > Built by [@saddam-eng-tech](https://github.com/saddam-eng-tech)
-> *"Your agent is only as smart as the skills you give it."*
+> *"Your agent is only as smart as the instructions given to agent."*
