@@ -2,7 +2,7 @@
 
 > A curated collection of battle-tested AI agent skills for **Claude Code** — supercharge your coding agent with plug-and-play skills for React, Go, MCP, and agentic workflows.
 
-[![Skills](https://img.shields.io/badge/skills-36+-blueviolet?style=flat-square)](./README.md)
+[![Skills](https://img.shields.io/badge/skills-41+-blueviolet?style=flat-square)](./README.md)
 [![React](https://img.shields.io/badge/React-TypeScript-61DAFB?style=flat-square&logo=react)](./react-scaffold)
 [![Go](https://img.shields.io/badge/Go-microservices-00ADD8?style=flat-square&logo=go)](./go-grpc-service-scaffolder)
 [![License](https://img.shields.io/github/license/saddam-eng-tech/ai-agent-skills?style=flat-square)](./LICENSE)
@@ -67,10 +67,10 @@ git clone https://github.com/saddam-eng-tech/ai-agent-skills.git
 | [go-resilience-layer](./go-resilience-layer) | Composable resilience layer — circuit breaker, retry, timeout for gRPC clients |
 | [go-graceful-shutdown](./go-graceful-shutdown) | Graceful shutdown manager handling OS signals, drain logic and cleanup |
 | [go-lint-config](./go-lint-config) | Production-grade `.golangci.yml` config for Go microservices |
-| [go-config-validator](./go-config-validator) | Typed config struct with validation and MustLoad() — reads env vars and panics with a clear message on missing/invalid config |
-| [go-integration-tests](./go-integration-tests) | Scaffolds a full integration test suite using testcontainers-go with real PostgreSQL, auto-migration, and per-test DB isolation |
-| [go-migration-gen](./go-migration-gen) | Generates golang-migrate SQL migration from a Go struct — correct types, constraints, indexes, soft delete, and Down rollback |
-| [go-request-logging](./go-request-logging) | Structured logging interceptor for gRPC — injects request_id and trace_id into every log line across a request's lifecycle |
+| [go-config-validator](./go-config-validator) | Typed config struct with MustLoad() — reads env vars, panics clearly on missing/invalid config |
+| [go-integration-tests](./go-integration-tests) | Full integration test suite using testcontainers-go with real PostgreSQL and per-test DB isolation |
+| [go-migration-gen](./go-migration-gen) | Generates golang-migrate SQL migration from a Go struct — types, indexes, soft delete, Down rollback |
+| [go-request-logging](./go-request-logging) | Structured gRPC logging interceptor — injects request_id and trace_id into every log line |
 
 ### Agent & Claude Code Workflow
 
@@ -83,6 +83,16 @@ git clone https://github.com/saddam-eng-tech/ai-agent-skills.git
 | [context-reset-planner](./context-reset-planner) | Detects context rot in long Claude sessions, produces a clean reset plan |
 | [agent-env-syncer](./agent-env-syncer) | Syncs skills + MCP settings into a single source-of-truth workspace config |
 | [subagent-scaffolder](./subagent-scaffolder) | Generates complete Claude Code sub-agent definitions — prompts, tools and routing |
+| [agent-trace-analyzer](./agent-trace-analyzer) | Examines agent session logs to explain decisions, classify failures, and suggest targeted fixes |
+| [multi-agent-planner](./multi-agent-planner) | Designs complete multi-agent workflows — planner orchestrator, worker agents, routing logic and handoff protocols |
+
+### AI & LLM Engineering
+
+| Skill | What it does |
+|-------|-------------|
+| [llm-eval-scaffolder](./llm-eval-scaffolder) | Builds full LLM eval pipelines — test cases, LLM-as-judge prompts, scoring scripts, and CI integration |
+| [rag-gap-auditor](./rag-gap-auditor) | Audits RAG pipelines for knowledge gaps, stale docs, and chunking issues — delivers a prioritised fix plan |
+| [token-cost-estimator](./token-cost-estimator) | Estimates token usage and API costs for Claude tasks — flags context window risks and suggests optimisations |
 
 ### Spec & Documentation
 
@@ -90,11 +100,6 @@ git clone https://github.com/saddam-eng-tech/ai-agent-skills.git
 |-------|-------------|
 | [spec-md-generator](./spec-md-generator) | Generates a full `spec.md` through a structured interview with the agent |
 | [reverse-spec-writer](./reverse-spec-writer) | Reverse-engineers `spec.md` from an existing codebase |
-| [multi-agent-planner](./multi-agent-planner) | Designs complete multi-agent AI workflows with a planner orchestrator and specia | 2026-03-12 |
-| [agent-trace-analyzer](./agent-trace-analyzer) | Examines Claude Code agent session logs and traces to explain decisions made, id | 2026-03-12 |
-| [rag-gap-auditor](./rag-gap-auditor) | Identifies knowledge gaps in RAG (Retrieval-Augmented Generation) setups by runn | 2026-03-12 |
-| [llm-eval-scaffolder](./llm-eval-scaffolder) | Builds LLM evaluation pipelines with structured test cases, LLM-as-judge prompts | 2026-03-12 |
-| [token-cost-estimator](./token-cost-estimator) | Calculates token usage and estimated API costs for Claude tasks by analysing pro | 2026-03-12 |
 
 ---
 
@@ -127,4 +132,4 @@ Got a skill that saves you time every week? **Share it.**
 ---
 
 > Built by [@saddam-eng-tech](https://github.com/saddam-eng-tech)
-> *"Your agent is only as smart as the instructions given to agent."*
+> *"Your agent is only as smart as the skills you give it."*
