@@ -31,3 +31,4 @@ AI agent skills for Claude code AI
 | [mcp-config-debugger](./mcp-config-debugger) | Diagnoses and fixes MCP (Model Context Protocol) configuration errors including  | 2026-03-12 |
 | [mcp-tool-pruner](./mcp-tool-pruner) | Audits an MCP server configuration to identify tool overload — too many tools  | 2026-03-12 |
 | [context-reset-planner](./context-reset-planner) | Detects context rot in long LLM/Claude Code sessions and produces a structured c | 2026-03-12 |
+| [agent-env-syncer](./agent-env-syncer) | Generates a single source-of-truth workspace config that syncs skills and MCP se | 2026-03-12 |
