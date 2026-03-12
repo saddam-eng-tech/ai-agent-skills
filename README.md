@@ -92,6 +92,7 @@ git clone https://github.com/saddam-eng-tech/ai-agent-skills.git
 | [reverse-spec-writer](./reverse-spec-writer) | Reverse-engineers `spec.md` from an existing codebase |
 | [agent-trace-analyzer](./agent-trace-analyzer) | Examines Claude Code agent session logs and traces to explain decisions made, id | 2026-03-12 |
 | [rag-gap-auditor](./rag-gap-auditor) | Identifies knowledge gaps in RAG (Retrieval-Augmented Generation) setups by runn | 2026-03-12 |
+| [llm-eval-scaffolder](./llm-eval-scaffolder) | Builds LLM evaluation pipelines with structured test cases, LLM-as-judge prompts | 2026-03-12 |
 
 ---
 
