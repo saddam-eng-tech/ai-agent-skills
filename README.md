@@ -118,4 +118,4 @@ Got a skill that saves you time every week? **Share it.**
 ---
 
 > Built by [@saddam-eng-tech](https://github.com/saddam-eng-tech)
-> *"Your agent is only as smart as the skills you give it."*
+> *"Your agent is only as smart as the instructions given to agent"*
