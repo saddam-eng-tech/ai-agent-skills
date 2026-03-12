@@ -30,3 +30,4 @@ AI agent skills for Claude code AI
 | [claude-md-auditor](./claude-md-auditor) | Audits an existing CLAUDE.md file against the actual codebase to find stale comm | 2026-03-12 |
 | [mcp-config-debugger](./mcp-config-debugger) | Diagnoses and fixes MCP (Model Context Protocol) configuration errors including  | 2026-03-12 |
 | [mcp-tool-pruner](./mcp-tool-pruner) | Audits an MCP server configuration to identify tool overload — too many tools  | 2026-03-12 |
+| [context-reset-planner](./context-reset-planner) | Detects context rot in long LLM/Claude Code sessions and produces a structured c | 2026-03-12 |
