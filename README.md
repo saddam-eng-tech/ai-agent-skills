@@ -26,3 +26,4 @@ AI agent skills for Claude code AI
 | [go-proto-wiring](./go-proto-wiring) | Reads a .proto file and generates the full Go handler, service interface, and pr | 2026-03-10 |
 | [go-wire-setup](./go-wire-setup) | Generates a Google Wire dependency injection setup for a Go microservice — pro | 2026-03-10 |
 | [go-grpc-gateway](./go-grpc-gateway) | Generates an HTTP-to-gRPC gateway using grpc-gateway — adds HTTP binding annot | 2026-03-10 |
+| [claude-md-generator](./claude-md-generator) | Generates a production-ready CLAUDE.md file for any project by analyzing the cod | 2026-03-12 |
