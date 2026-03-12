@@ -28,3 +28,4 @@ AI agent skills for Claude code AI
 | [go-grpc-gateway](./go-grpc-gateway) | Generates an HTTP-to-gRPC gateway using grpc-gateway — adds HTTP binding annot | 2026-03-10 |
 | [claude-md-generator](./claude-md-generator) | Generates a production-ready CLAUDE.md file for any project by analyzing the cod | 2026-03-12 |
 | [claude-md-auditor](./claude-md-auditor) | Audits an existing CLAUDE.md file against the actual codebase to find stale comm | 2026-03-12 |
+| [mcp-config-debugger](./mcp-config-debugger) | Diagnoses and fixes MCP (Model Context Protocol) configuration errors including  | 2026-03-12 |
