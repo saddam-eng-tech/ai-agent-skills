@@ -2,7 +2,7 @@
 
 > A curated collection of battle-tested AI agent skills for **Claude Code** — supercharge your coding agent with plug-and-play skills for React, Go, MCP, and agentic workflows.
 
-[![Skills](https://img.shields.io/badge/skills-32+-blueviolet?style=flat-square)](./README.md)
+[![Skills](https://img.shields.io/badge/skills-36+-blueviolet?style=flat-square)](./README.md)
 [![React](https://img.shields.io/badge/React-TypeScript-61DAFB?style=flat-square&logo=react)](./react-scaffold)
 [![Go](https://img.shields.io/badge/Go-microservices-00ADD8?style=flat-square&logo=go)](./go-grpc-service-scaffolder)
 [![License](https://img.shields.io/github/license/saddam-eng-tech/ai-agent-skills?style=flat-square)](./LICENSE)
@@ -67,6 +67,10 @@ git clone https://github.com/saddam-eng-tech/ai-agent-skills.git
 | [go-resilience-layer](./go-resilience-layer) | Composable resilience layer — circuit breaker, retry, timeout for gRPC clients |
 | [go-graceful-shutdown](./go-graceful-shutdown) | Graceful shutdown manager handling OS signals, drain logic and cleanup |
 | [go-lint-config](./go-lint-config) | Production-grade `.golangci.yml` config for Go microservices |
+| [go-config-validator](./go-config-validator) | Typed config struct with validation and MustLoad() — reads env vars and panics with a clear message on missing/invalid config |
+| [go-integration-tests](./go-integration-tests) | Scaffolds a full integration test suite using testcontainers-go with real PostgreSQL, auto-migration, and per-test DB isolation |
+| [go-migration-gen](./go-migration-gen) | Generates golang-migrate SQL migration from a Go struct — correct types, constraints, indexes, soft delete, and Down rollback |
+| [go-request-logging](./go-request-logging) | Structured logging interceptor for gRPC — injects request_id and trace_id into every log line across a request's lifecycle |
 
 ### Agent & Claude Code Workflow
 
@@ -118,4 +122,4 @@ Got a skill that saves you time every week? **Share it.**
 ---
 
 > Built by [@saddam-eng-tech](https://github.com/saddam-eng-tech)
-> *"Your agent is only as smart as the instructions given to agent"*
+> *"Your agent is only as smart as the skills you give it."*
