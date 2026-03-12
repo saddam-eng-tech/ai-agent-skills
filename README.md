@@ -34,3 +34,4 @@ AI agent skills for Claude code AI
 | [agent-env-syncer](./agent-env-syncer) | Generates a single source-of-truth workspace config that syncs skills and MCP se | 2026-03-12 |
 | [spec-md-generator](./spec-md-generator) | Generates a complete spec.md (project specification document) by having a struct | 2026-03-12 |
 | [reverse-spec-writer](./reverse-spec-writer) | Reads an existing codebase and reverse-engineers a spec.md — documenting what  | 2026-03-12 |
+| [subagent-scaffolder](./subagent-scaffolder) | Generates complete Claude Code sub-agent definitions — system prompts, tool re | 2026-03-12 |
