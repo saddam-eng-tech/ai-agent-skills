@@ -125,7 +125,7 @@ Use FAIL only for obviously broken layouts or completely wrong designs.
 ### STEP 6 — Produce visual verifier report
 
 Return the report payload as defined in
-`../frontend-agent-team/references/payload-schema.md` → section 4.
+`../references/payload-schema.md` → section 4.
 
 For each component, `notes` should be specific:
 - Good: "Bottom padding on card is ~8px, design shows 16px. Use `pb-4` instead of `pb-2`."

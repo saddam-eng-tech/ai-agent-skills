@@ -130,7 +130,7 @@ Before producing the code report, run this checklist mentally:
 ### STEP 7 — Produce code report payload
 
 Return the code report payload as defined in
-`../frontend-agent-team/references/payload-schema.md` → section 2.
+`../references/payload-schema.md` → section 2.
 
 Populate `build_status` honestly:
 - `clean`: no type errors, no lint errors

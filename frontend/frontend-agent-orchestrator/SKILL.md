@@ -19,7 +19,7 @@ This agent never writes production code itself — it reasons, routes, and revie
 **Triggers on**: invoked by `frontend-agent-team`, or "plan this feature",
 "break down this ticket", "orchestrate this task"
 **Input**: ticket + design reference + repo path + standards doc location
-**Output**: Plan payload (see `../frontend-agent-team/references/payload-schema.md`)
+**Output**: Plan payload (see `../references/payload-schema.md`)
 
 ---
 
@@ -79,7 +79,7 @@ Map ticket requirements onto the design:
 ### STEP 4 — Build the plan payload
 
 Produce the full plan payload as defined in
-`../frontend-agent-team/references/payload-schema.md` → section 1.
+`../references/payload-schema.md` → section 1.
 
 Rules for a good plan:
 - One component per `components_to_build` entry. Never bundle two components.
@@ -141,7 +141,7 @@ If any BLOCK findings:
 ### STEP 8 — Produce final summary
 
 Follow the final summary format defined in
-`../frontend-agent-team/SKILL.md` → STEP 4.
+`../skill (51).md` → STEP 4.
 
 Include:
 - One-paragraph narrative of what was built

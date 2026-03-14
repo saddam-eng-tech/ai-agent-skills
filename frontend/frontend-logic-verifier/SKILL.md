@@ -109,7 +109,7 @@ runtime bug or fail CI. False BLOCK findings waste a fix cycle.
 ### STEP 5 — Produce logic verifier report
 
 Return the report payload as defined in
-`../frontend-agent-team/references/payload-schema.md` → section 3.
+`../references/payload-schema.md` → section 3.
 
 `verdict` rules:
 - `PASS`: zero BLOCK findings (WARN/INFO may exist)
