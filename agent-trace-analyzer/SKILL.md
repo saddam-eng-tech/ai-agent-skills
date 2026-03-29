@@ -17,4 +17,4 @@ Reads an agent session log and produces a structured post-mortem: what each deci
 - "agent went off rails"
 
 ## Source
-`SKILL-46.md`
+`SKILL-47.md`
